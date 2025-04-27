@@ -33,6 +33,7 @@ function ProdutoForm() {
           Cadastro de Produto
         </Typography>
         <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
+  
           <TextField
             label="Nome do Produto"
             fullWidth
@@ -41,6 +42,7 @@ function ProdutoForm() {
             error={!!errors.nome}
             helperText={errors.nome?.message}
           />
+  
           <TextField
             label="Preço"
             fullWidth
@@ -56,13 +58,65 @@ function ProdutoForm() {
             helperText={errors.preco?.message}
             inputProps={{ maxLength: 10 }}
           />
+  
+          <TextField
+            label="Descrição"
+            fullWidth
+            margin="normal"
+            multiline
+            rows={1}
+            {...register('descricao', { required: 'Descrição obrigatória' })}
+            error={!!errors.descricao}
+            helperText={errors.descricao?.message}
+          />
+  
+          <TextField
+            label="Foto (URL)"
+            fullWidth
+            margin="normal"
+            {...register('foto')}
+            error={!!errors.foto}
+            helperText={errors.foto?.message}
+          />
+  
+          <TextField
+            label="Categoria"
+            fullWidth
+            margin="normal"
+            {...register('categoria', { required: 'Categoria obrigatória' })}
+            error={!!errors.categoria}
+            helperText={errors.categoria?.message}
+          />
+  
+          <TextField
+            label="Quantidade em Estoque"
+            type="number"
+            fullWidth
+            margin="normal"
+            {...register('quantidade_em_estoque', { required: 'Quantidade é obrigatória', min: { value: 0, message: 'Valor inválido' } })}
+            error={!!errors.quantidade_em_estoque}
+            helperText={errors.quantidade_em_estoque?.message}
+          />
+  
+          <Box sx={{ mt: 2 }}>
+            <label>
+              <input
+                type="checkbox"
+                {...register('ativo')}
+                defaultChecked
+              />
+              {' '}Produto Ativo
+            </label>
+          </Box>
+  
           <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, py: 1.5, fontWeight: 'bold', fontSize: '1rem' }}>
             Cadastrar
           </Button>
+  
         </Box>
       </Paper>
     </Box>
-  )
+  );
 }
 
 export default ProdutoForm

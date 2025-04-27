@@ -1,25 +1,21 @@
-import { Box, Button, TextField, Typography, Paper, IconButton, InputAdornment } from "@mui/material";
+import React, { useState } from "react";
+import { useAuth } from "../context/AuthContext";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { TextField, Button, Box, Typography, Paper, IconButton, InputAdornment } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
-import { useState } from "react";
 //Matheus Bairros Silva
-function LoginForm() {
+const LoginForm = () => {
   const { register, handleSubmit, formState: { errors } } = useForm();
-  const navigate = useNavigate();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
 
-  const onSubmit = (data) => {
-    if (data.usuario === 'abc' && data.senha === 'bolinhas') {
-      localStorage.setItem('loginRealizado', data.usuario);
-      navigate('/home');
-    } else {
-      alert('Usuário ou senha inválido!');
-    }
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
-  const togglePasswordVisibility = () => {
-    setShowPassword((prev) => !prev);
+  const onSubmit = (data) => {
+    const { username, password } = data;
+    login(username, password);
   };
 
   return (
@@ -34,29 +30,35 @@ function LoginForm() {
       }}
     >
       <Paper elevation={6} sx={{ p: 4, width: '100%', maxWidth: 400, borderRadius: 3 }}>
-        <Typography variant="h4" component="h1" sx={{ textAlign: 'center', mb: 3, fontWeight: 'bold' }}>
-          Bem-vindo
+        <Typography 
+          variant="h4" 
+          component="h1" 
+          sx={{ textAlign: 'center', mb: 3, fontWeight: 'bold' }}
+        >
+          Login
         </Typography>
+        
         <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
           <TextField
-            label="Usuário Matheus Bairros Silva"
+            label="Usuário"
             fullWidth
             margin="normal"
-            {...register('usuario', { required: 'Usuário obrigatório' })}
-            error={!!errors.usuario}
-            helperText={errors.usuario?.message}
+            {...register('username', { required: 'Usuário é obrigatório' })}
+            error={!!errors.username}
+            helperText={errors.username?.message}
           />
+
           <TextField
             label="Senha"
+            type={showPassword ? "text" : "password"}
             fullWidth
             margin="normal"
-            type={showPassword ? "text" : "password"}
-            {...register('senha', { 
-              required: 'Senha obrigatória', 
-              minLength: { value: 6, message: 'Mínimo 6 caracteres' } 
+            {...register('password', { 
+              required: 'Senha é obrigatória', 
+              minLength: { value: 6, message: 'Senha deve ter pelo menos 6 caracteres' }
             })}
-            error={!!errors.senha}
-            helperText={errors.senha?.message}
+            error={!!errors.password}
+            helperText={errors.password?.message}
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
@@ -67,6 +69,7 @@ function LoginForm() {
               )
             }}
           />
+
           <Button 
             type="submit" 
             fullWidth 
@@ -84,6 +87,6 @@ function LoginForm() {
       </Paper>
     </Box>
   );
-}
+};
 
 export default LoginForm;

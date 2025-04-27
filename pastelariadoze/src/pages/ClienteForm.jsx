@@ -5,6 +5,15 @@ import { useState } from "react"
 function ClienteForm() {
   const { register, handleSubmit, setValue, formState: { errors } } = useForm()
   const [telefone, setTelefone] = useState('')
+  const [cpf, setCpf] = useState('')
+
+  function formatCpf(value) {
+    value = value.replace(/\D/g, '')
+    value = value.replace(/(\d{3})(\d)/, '$1.$2')
+    value = value.replace(/(\d{3})(\d)/, '$1.$2')
+    value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+    return value.slice(0, 14)
+  }
 
   function formatTelefone(value) {
     value = value.replace(/\D/g, '')
@@ -33,7 +42,9 @@ function ClienteForm() {
         <Typography variant="h4" component="h1" sx={{ textAlign: 'center', mb: 3, fontWeight: 'bold' }}>
           Cadastro de Cliente
         </Typography>
+  
         <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
+          
           <TextField
             label="Nome"
             fullWidth
@@ -42,6 +53,7 @@ function ClienteForm() {
             error={!!errors.nome}
             helperText={errors.nome?.message}
           />
+  
           <TextField
             label="Telefone"
             fullWidth
@@ -57,21 +69,30 @@ function ClienteForm() {
             error={!!errors.telefone}
             helperText={errors.telefone?.message}
           />
+  
           <TextField
-            label="E-mail"
+            label="CPF"
             fullWidth
             margin="normal"
-            {...register('email', { required: 'E-mail obrigatório', maxLength: 100 })}
-            error={!!errors.email}
-            helperText={errors.email?.message}
+            value={cpf}
+            onChange={(e) => {
+              const value = formatCpf(e.target.value)
+              setCpf(value)
+              setValue('cpf', value)
+            }}
+            placeholder="000.000.000-00"
+            inputProps={{ maxLength: 14 }}
+            error={!!errors.cpf}
+            helperText={errors.cpf?.message}
           />
+  
           <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, py: 1.5, fontWeight: 'bold', fontSize: '1rem' }}>
             Cadastrar
           </Button>
         </Box>
       </Paper>
     </Box>
-  )
+  )  
 }
 
 export default ClienteForm
