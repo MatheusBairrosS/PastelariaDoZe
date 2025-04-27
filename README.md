@@ -1,2 +1,0 @@
-# PastelariaDoZe
-Pastelaria do Zé
