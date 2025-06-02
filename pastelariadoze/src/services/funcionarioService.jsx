@@ -42,12 +42,12 @@ export const deleteFuncionario = async (id) => {
 export const getFuncionarioByCPF = async (cpf) => {
   try {
     const response = await axios.get(`${PROXY_URL}cpf/${cpf}`);
-    return response.data; // Supondo que a API retorne os dados do funcionário
+    return response.data;
   } catch (error) {
     if (error.response?.status === 404) {
-      return null; // CPF não encontrado
+      return null;
     }
-    throw error; // Outros erros
+    throw error;
   }
 };
 

@@ -1,67 +1,102 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  Box,
-  Button,
-  TextField,
-  Typography,
-  Paper,
-  Grid,
-  FormControlLabel,
-  Checkbox,
+  Box, Paper, Typography, Grid, TextField, Button, Dialog,
+  DialogTitle, DialogContent, DialogContentText, DialogActions,
+  FormControlLabel, Checkbox
 } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
-// Componente simples para formatar preço com máscara
-function PriceInput({ value, onChange, ...rest }) {
-  // Mantém o valor formatado para mostrar
-  const formatPrice = (val) => {
-    if (!val) return '';
-    // Remove tudo que não é número
-    const onlyNums = val.replace(/\D/g, '');
-    const number = Number(onlyNums);
-    if (isNaN(number)) return '';
-    // Divide por 100 para simular centavos
-    const formatted = (number / 100).toFixed(2).replace('.', ',');
-    return formatted;
-  };
+import {
+  getProdutoById,
+  createProduto,
+  updateProduto,
+  deleteProduto
+} from '../services/produtoService';
 
-  const handleChange = (e) => {
-    const val = e.target.value;
-    const formatted = formatPrice(val);
-    onChange(formatted);
-  };
-
-  return (
-    <TextField
-      {...rest}
-      value={value || ''}
-      onChange={handleChange}
-      placeholder="0,00"
-      inputProps={{ maxLength: 10 }}
-    />
-  );
+function formatPreco(valor) {
+  if (!valor) return '';
+  const nums = valor.toString().replace(/\D/g, '');
+  const preco = (Number(nums) / 100).toFixed(2);
+  return preco.replace('.', ',');
 }
 
-const ProdutoForm = ({ title = 'Cadastro de Produto', isReadOnly = false }) => {
-  const navigate = useNavigate();
-  const { control, handleSubmit, setValue, formState: { errors } } = useForm({
-    defaultValues: {
-      nome: '',
-      preco: '',
-      descricao: '',
-      foto: '',
-      categoria: '',
-      quantidade_em_estoque: '',
-      ativo: true,
-    }
-  });
-  const [preco, setPreco] = useState('');
+function parsePreco(valorFormatado) {
+  return valorFormatado;
+}
 
-  const onSubmit = (data) => {
-    console.log('Produto cadastrado:', data);
-    alert('Produto cadastrado!');
-    navigate('/produtos'); // Ajuste a rota conforme sua app
+const ProdutoForm = () => {
+  const { id, opr } = useParams();
+  const navigate = useNavigate();
+  const isReadOnly = opr === 'view';
+  const [openConfirmDelete, setOpenConfirmDelete] = useState(false);
+  const [imagePreview, setImagePreview] = useState(null);
+
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors },
+    setValue,
+  } = useForm();
+
+  const title = opr === 'view'
+    ? `Visualizar Produto: ${id}`
+    : opr === 'edit'
+    ? `Editar Produto: ${id}`
+    : 'Cadastro de Produto';
+
+  useEffect(() => {
+    if (id) {
+      const fetchProduto = async () => {
+        try {
+          const produto = await getProdutoById(id);
+          reset({
+            ...produto,
+            preco: formatPreco(produto.preco)
+          });
+          setImagePreview(produto.foto);
+        } catch (error) {
+          toast.error('Erro ao carregar produto');
+        }
+      };
+      fetchProduto();
+    }
+  }, [id, reset]);
+
+  const onSubmit = async (data) => {
+    try {
+      const produto = {
+        ...data,
+        preco: parsePreco(data.preco),
+      };
+
+      const response = id
+        ? await updateProduto(id, produto)
+        : await createProduto(produto);
+
+      if (!response || !response.id) {
+        throw new Error('Erro ao salvar produto');
+      }
+
+      toast.success(`Produto ${id ? 'atualizado' : 'cadastrado'} com sucesso!`);
+      navigate('/produtos');
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteProduto(id);
+      toast.success('Produto excluído com sucesso!');
+      navigate('/produtos');
+    } catch (err) {
+      toast.error('Erro ao excluir produto');
+    } finally {
+      setOpenConfirmDelete(false);
+    }
   };
 
   return (
@@ -93,7 +128,6 @@ const ProdutoForm = ({ title = 'Cadastro de Produto', isReadOnly = false }) => {
           color="primary"
           align="center"
           gutterBottom
-          sx={{ mb: 3 }}
         >
           {title}
         </Typography>
@@ -115,53 +149,58 @@ const ProdutoForm = ({ title = 'Cadastro de Produto', isReadOnly = false }) => {
               <Controller
                 name="nome"
                 control={control}
-                rules={{ required: 'Nome do Produto é obrigatório', maxLength: 100 }}
+                defaultValue=""
+                rules={{ required: 'Nome é obrigatório' }}
                 render={({ field }) => (
                   <TextField
                     {...field}
-                    disabled={isReadOnly}
-                    label="Nome do Produto"
+                    label="Nome"
                     fullWidth
+                    disabled={isReadOnly}
                     error={!!errors.nome}
                     helperText={errors.nome?.message}
-                    size="medium"
                   />
                 )}
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12}>
               <Controller
-                name="preco"
+                name="valor"
                 control={control}
-                rules={{ required: 'Preço é obrigatório' }}
+                defaultValue=""
+                rules={{ required: 'Valor é obrigatório' }}
                 render={({ field }) => (
-                  <PriceInput
+                  <TextField
                     {...field}
+                    label="Valor"
+                    fullWidth
                     disabled={isReadOnly}
-                    label="Preço"
-                    error={!!errors.preco}
-                    helperText={errors.preco?.message}
-                    size="medium"
+                    error={!!errors.valor}
+                    helperText={errors.valor?.message}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '');
+                      field.onChange(formatPreco(val));
+                    }}
                   />
                 )}
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12}>
               <Controller
                 name="categoria"
                 control={control}
-                rules={{ required: 'Categoria é obrigatória' }}
+                defaultValue=""
+                rules={{ required: 'Categoria obrigatória' }}
                 render={({ field }) => (
                   <TextField
                     {...field}
-                    disabled={isReadOnly}
                     label="Categoria"
                     fullWidth
+                    disabled={isReadOnly}
                     error={!!errors.categoria}
                     helperText={errors.categoria?.message}
-                    size="medium"
                   />
                 )}
               />
@@ -171,18 +210,82 @@ const ProdutoForm = ({ title = 'Cadastro de Produto', isReadOnly = false }) => {
               <Controller
                 name="descricao"
                 control={control}
-                rules={{ required: 'Descrição obrigatória' }}
+                defaultValue=""
                 render={({ field }) => (
                   <TextField
                     {...field}
-                    disabled={isReadOnly}
                     label="Descrição"
-                    multiline
-                    rows={2}
                     fullWidth
+                    multiline
+                    rows={3}
+                    disabled={isReadOnly}
                     error={!!errors.descricao}
                     helperText={errors.descricao?.message}
-                    size="medium"
+                  />
+                )}
+              />
+            </Grid>
+
+           <Grid item xs={12}>
+              <Controller
+                name="foto"
+                control={control}
+                defaultValue=""
+                render={({ field }) => (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                    <Button
+                      variant="outlined"
+                      component="label"
+                      fullWidth
+                      disabled={isReadOnly}
+                    >
+                      Procurar Imagem
+                      <input
+                        type="file"
+                        hidden
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              const base64 = reader.result;
+                              setImagePreview(base64);
+                              field.onChange(base64);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </Button>
+
+                    {(imagePreview || field.value) && (
+                      <img
+                        src={imagePreview || field.value}
+                        alt="Preview"
+                        style={{ maxHeight: 150, borderRadius: 8 }}
+                      />
+                    )}
+                  </Box>
+                )}
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <Controller
+                name="quantidade_em_estoque"
+                control={control}
+                defaultValue=""
+                rules={{ required: 'Obrigatório' }}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Quantidade em Estoque"
+                    fullWidth
+                    type="number"
+                    disabled={isReadOnly}
+                    error={!!errors.quantidade_em_estoque}
+                    helperText={errors.quantidade_em_estoque?.message}
                   />
                 )}
               />
@@ -190,82 +293,57 @@ const ProdutoForm = ({ title = 'Cadastro de Produto', isReadOnly = false }) => {
 
             <Grid item xs={12}>
               <Controller
-                name="foto"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    disabled={isReadOnly}
-                    label="Foto (URL)"
-                    fullWidth
-                    error={!!errors.foto}
-                    helperText={errors.foto?.message}
-                    size="medium"
-                  />
-                )}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <Controller
-                name="quantidade_em_estoque"
-                control={control}
-                rules={{
-                  required: 'Quantidade é obrigatória',
-                  min: { value: 0, message: 'Valor inválido' },
-                }}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    disabled={isReadOnly}
-                    label="Quantidade em Estoque"
-                    type="number"
-                    fullWidth
-                    error={!!errors.quantidade_em_estoque}
-                    helperText={errors.quantidade_em_estoque?.message}
-                    size="medium"
-                  />
-                )}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6} display="flex" alignItems="center">
-              <Controller
                 name="ativo"
                 control={control}
+                defaultValue=""
                 render={({ field }) => (
                   <FormControlLabel
-                    control={<Checkbox {...field} checked={field.value} disabled={isReadOnly} />}
+                    control={
+                      <Checkbox
+                        {...field}
+                        checked={!!field.value}
+                        disabled={isReadOnly}
+                      />
+                    }
                     label="Produto Ativo"
                   />
                 )}
               />
             </Grid>
 
-            <Grid item xs={12} display="flex" justifyContent="flex-end" gap={2}>
+            <Grid item xs={12} display="flex" justifyContent="space-between" gap={2}>
               <Button
                 onClick={() => navigate('/produtos')}
                 variant="outlined"
                 color="primary"
-                size="medium"
               >
-                Cancelar
+                Voltar
               </Button>
+
               {!isReadOnly && (
                 <Button
                   type="submit"
                   variant="contained"
                   color="primary"
-                  size="medium"
-                  sx={{ fontWeight: 'bold', fontSize: '1rem' }}
                 >
-                  Cadastrar
+                  Salvar
                 </Button>
               )}
             </Grid>
           </Grid>
         </form>
       </Paper>
+
+      <Dialog open={openConfirmDelete} onClose={() => setOpenConfirmDelete(false)}>
+        <DialogTitle>Confirmar Exclusão</DialogTitle>
+        <DialogContent>
+          <DialogContentText>Tem certeza que deseja excluir este produto?</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenConfirmDelete(false)} color="primary">Cancelar</Button>
+          <Button onClick={handleDelete} color="error">Excluir</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
