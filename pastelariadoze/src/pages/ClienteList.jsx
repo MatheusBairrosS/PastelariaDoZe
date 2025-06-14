@@ -7,6 +7,7 @@ import { Edit, Delete, Visibility, FiberNew } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { getClientes, deleteCliente } from '../services/clienteService';
+import { gerarRelatorioPDF } from '../utils/pdfReport';
 
 function ClienteList() {
   const navigate = useNavigate();
@@ -67,6 +68,35 @@ function ClienteList() {
     }
   };
 
+  const formatCPF = (cpf) => {
+  if (!cpf) return '';
+  return cpf.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
+};
+
+const formatTelefone = (telefone) => {
+  if (!telefone) return '';
+  return telefone.length === 11
+    ? telefone.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3')
+    : telefone.replace(/^(\d{2})(\d{4})(\d{4})$/, '($1) $2-$3');
+};
+
+const handleGerarRelatorio = () => {
+  const colunas = ['ID', 'Nome', 'CPF', 'Telefone'];
+  const dadosFormatados = clientes.map((c) => ({
+    ID: c.id_cliente,
+    Nome: c.nome,
+    CPF: formatCPF(c.cpf),
+    Telefone: formatTelefone(c.telefone),
+  }));
+
+  gerarRelatorioPDF({
+    titulo: 'Relatório de Clientes',
+    colunas,
+    dados: dadosFormatados,
+    incluirImagem: true,
+  });
+};
+
   return (
     <Box sx={{ mt: 4 }}>
       <Toolbar sx={{ backgroundColor: '#1E90FF', borderRadius: 2, mb: 2 }}>
@@ -78,6 +108,14 @@ function ClienteList() {
           startIcon={<FiberNew />}
         >
           Novo Cliente
+        </Button>
+
+        <Button
+          variant="contained"
+          sx={{ backgroundColor: '#00008B', ml: 2 }}
+          onClick={handleGerarRelatorio}
+        >
+          Gerar Relatório
         </Button>
       </Toolbar>
 

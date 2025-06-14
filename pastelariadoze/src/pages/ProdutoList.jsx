@@ -7,6 +7,7 @@ import { Edit, Delete, Visibility, FiberNew } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { getProdutos, deleteProduto } from '../services/produtoService';
+import { gerarRelatorioPDF } from '../utils/pdfReport';
 
 function ProdutoList() {
   const navigate = useNavigate();
@@ -67,6 +68,25 @@ function ProdutoList() {
     }
   };
 
+  const handleGerarRelatorio = () => {
+  const colunas = ['ID', 'Nome', 'Descrição', 'Valor', 'Estoque'];
+  const dadosFormatados = produtos.map((p) => ({
+    ID: p.id_produto,
+    Nome: p.nome,
+    Descrição: p.descricao,
+    Valor: p.valor,
+    Estoque: p.quantidade_em_estoque,
+    //foto: p.foto,
+  }));
+
+  gerarRelatorioPDF({
+    titulo: 'Relatório de Produtos',
+    colunas,
+    dados: dadosFormatados,
+    incluirImagem: true,
+  });
+};
+
   return (
     <Box sx={{ mt: 4 }}>
       <Toolbar sx={{ backgroundColor: '#1E90FF', borderRadius: 2, mb: 2 }}>
@@ -78,6 +98,13 @@ function ProdutoList() {
           startIcon={<FiberNew />}
         >
           Novo Produto
+        </Button>
+        <Button
+          variant="contained"
+          sx={{ backgroundColor: '#00008B', ml: 2 }}
+          onClick={handleGerarRelatorio}
+        >
+          Gerar Relatório
         </Button>
       </Toolbar>
 

@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { getFuncionarios, deleteFuncionario } from '../services/funcionarioService';
 import { toast } from 'react-toastify';
 import { useTheme } from '@mui/material/styles';
+import { gerarRelatorioPDF } from '../utils/pdfReport';
 
 function FuncionarioList() {
   const navigate = useNavigate();
@@ -80,6 +81,23 @@ function FuncionarioList() {
       : telefone.replace(/^(\d{2})(\d{4})(\d{4})$/, '($1) $2-$3');
   };
 
+  const handleGerarRelatorio = () => {
+  const colunas = ['ID', 'Nome', 'CPF', 'Telefone'];
+  const dadosFormatados = funcionarios.map((f) => ({
+    ID: f.id_funcionario,
+    Nome: f.nome,
+    CPF: formatCPF(f.cpf),
+    Telefone: formatTelefone(f.telefone),
+  }));
+
+  gerarRelatorioPDF({
+    titulo: 'Relatório de Funcionários',
+    colunas,
+    dados: dadosFormatados,
+    incluirImagem: true,
+  });
+};
+
   return (
     <Box sx={{ mt: 4 }}>
       <Toolbar sx={{ backgroundColor: '#1E90FF', borderRadius: 2, mb: 2 }}>
@@ -91,6 +109,14 @@ function FuncionarioList() {
           startIcon={<FiberNew />}
         >
           Novo Funcionário
+        </Button>
+
+        <Button
+          variant="contained"
+          sx={{ backgroundColor: '#00008B', ml: 2 }}
+          onClick={handleGerarRelatorio}
+        >
+          Gerar Relatório
         </Button>
       </Toolbar>
 
